@@ -51,7 +51,7 @@ public class CubePart : MonoBehaviour
 
     }
 
-    private Vector3Int RoundVector3(Vector3 vector)
+    private static Vector3Int RoundVector3(Vector3 vector)
     {
         return new Vector3Int
         {
@@ -72,7 +72,7 @@ public class CubePart : MonoBehaviour
             CubeColor.Red => _red,
             CubeColor.White => _white,
             CubeColor.Yellow => _yellow,
-            _ => throw new ArgumentOutOfRangeException(nameof(color), color, null)
+            _ => throw new ArgumentOutOfRangeException()
         };
     }
 
