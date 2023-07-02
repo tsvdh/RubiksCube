@@ -11,8 +11,15 @@ public class CameraScript : MonoBehaviour
     }
 
     // Update is called once per frame
-    void Update()
+    public void FixedUpdate()
     {
-        
+        if (Input.GetKey(KeyCode.LeftArrow))
+            transform.RotateAround(Vector3.zero, Vector3.up, 1);
+        if (Input.GetKey(KeyCode.RightArrow))
+            transform.RotateAround(Vector3.zero, Vector3.up, -1);
+        if (Input.GetKey(KeyCode.UpArrow))
+            transform.RotateAround(Vector3.zero, transform.right, 1);
+        if (Input.GetKey(KeyCode.DownArrow))
+            transform.RotateAround(Vector3.zero, transform.right, -1);
     }
 }
