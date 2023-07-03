@@ -1,7 +1,7 @@
 ﻿### Things to implement
-* Get part's colors and directions
+* ~~Get part's colors and directions~~
 * Given an algorithm, execute on each direction
-* Get the three slices of a part
+* ~~Get the three slices of a part~~
 * Rotate slice to move part to desired place
 * Slice utilities
 * View from each direction

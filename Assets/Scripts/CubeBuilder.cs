@@ -1,18 +1,17 @@
-using System;
-using System.Collections;
 using System.Collections.Generic;
+using Color = CubeUtils.Color;
 using UnityEngine;
 
 public class CubeBuilder : MonoBehaviour
 {
     public GameObject cubePartPrefab;
-    
-    
-    
+    public static List<CubePart> Parts; 
 
     // Start is called before the first frame update
     public void Start()
     {
+        Parts = new List<CubePart>();
+        
         for (int x = -1; x < 2; x++)
         {
             for (int y = -1; y < 2; y++)
@@ -23,18 +22,20 @@ public class CubeBuilder : MonoBehaviour
                     cubePart.transform.parent = transform;
 
                     var cubePartComp = cubePart.GetComponent<CubePart>();
+                    Parts.Add(cubePartComp);
+                    
                     if (x == -1)
-                        cubePartComp.ColorSide(Vector3Int.left, CubeColor.Red);
+                        cubePartComp.ColorSide(Vector3Int.left, Color.Red);
                     if (x == 1)
-                        cubePartComp.ColorSide(Vector3Int.right, CubeColor.Orange);
+                        cubePartComp.ColorSide(Vector3Int.right, Color.Orange);
                     if (y == -1)
-                        cubePartComp.ColorSide(Vector3Int.down, CubeColor.Yellow);
+                        cubePartComp.ColorSide(Vector3Int.down, Color.Yellow);
                     if (y == 1) 
-                        cubePartComp.ColorSide(Vector3Int.up, CubeColor.White);
+                        cubePartComp.ColorSide(Vector3Int.up, Color.White);
                     if (z == -1) 
-                        cubePartComp.ColorSide(Vector3Int.back, CubeColor.Blue);
+                        cubePartComp.ColorSide(Vector3Int.back, Color.Blue);
                     if (z == 1)
-                        cubePartComp.ColorSide(Vector3Int.forward, CubeColor.Green);
+                        cubePartComp.ColorSide(Vector3Int.forward, Color.Green);
                 }
             }
         }

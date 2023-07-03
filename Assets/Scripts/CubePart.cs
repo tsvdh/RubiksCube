@@ -2,10 +2,11 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using Color = CubeUtils.Color;
 
 public class CubePart : MonoBehaviour
 {
-    private Dictionary<Vector3Int, CubeColor> _sideColors;
+    private Dictionary<Vector3Int, Color> _sideColors;
 
     private Material _black;
     private Material _blue;
@@ -17,7 +18,7 @@ public class CubePart : MonoBehaviour
 
     public void Awake()
     {
-        _sideColors = new Dictionary<Vector3Int, CubeColor>();
+        _sideColors = new Dictionary<Vector3Int, Color>();
         
         _black = Resources.Load<Material>("Materials/Black");
         _blue = Resources.Load<Material>("Materials/Blue");
@@ -33,22 +34,10 @@ public class CubePart : MonoBehaviour
             
             Vector3 dir = mesh.normals[0];
             dir = side.localToWorldMatrix.MultiplyVector(dir);
-            _sideColors.Add(RoundVector3(dir), CubeColor.Black);
+            _sideColors.Add(RoundVector3(dir), Color.Black);
             
             side.GetComponent<MeshRenderer>().material = _black;
         }
-    }
-
-    // Start is called before the first frame update
-    public void Start()
-    {
-        
-    }
-
-    // Update is called once per frame
-    void Update()
-    {
-
     }
 
     private static Vector3Int RoundVector3(Vector3 vector)
@@ -61,22 +50,22 @@ public class CubePart : MonoBehaviour
         };
     }
     
-    private Material GetMaterial(CubeColor color)
+    private Material GetMaterial(Color color)
     {
         return color switch
         {
-            CubeColor.Black => _black,
-            CubeColor.Blue => _blue,
-            CubeColor.Green => _green,
-            CubeColor.Orange => _orange,
-            CubeColor.Red => _red,
-            CubeColor.White => _white,
-            CubeColor.Yellow => _yellow,
+            Color.Black => _black,
+            Color.Blue => _blue,
+            Color.Green => _green,
+            Color.Orange => _orange,
+            Color.Red => _red,
+            Color.White => _white,
+            Color.Yellow => _yellow,
             _ => throw new ArgumentOutOfRangeException()
         };
     }
 
-    public void ColorSide(Vector3Int sideNormal, CubeColor color)
+    public void ColorSide(Vector3Int sideNormal, Color color)
     {
         foreach (Transform side in transform.Find("Sides"))
         {
@@ -90,5 +79,24 @@ public class CubePart : MonoBehaviour
                 return;
             }                
         }
+    }
+
+    public Dictionary<Vector3Int, Color> GetSideColors()
+    {
+        var nonBlackColors = new Dictionary<Vector3Int, Color>();
+        foreach (KeyValuePair<Vector3Int, Color> entry in _sideColors)
+        {
+            if (entry.Value != Color.Black)
+            {
+                Vector3 transformedDir = transform.localToWorldMatrix.MultiplyVector(entry.Key);
+                nonBlackColors.Add(RoundVector3(transformedDir), entry.Value);
+            }
+        }
+        return nonBlackColors;
+    }
+
+    public Vector3Int GetPosition()
+    {
+        return RoundVector3(transform.position);
     }
 }

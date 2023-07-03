@@ -1,33 +1,15 @@
 using System;
 using System.Collections.Generic;
+using CubeUtils;
 using UnityEngine;
 using UnityEngine.UIElements;
 using Random = UnityEngine.Random;
 
 public class CubeRotator : MonoBehaviour
 {
-    private enum Dimension
-    {
-        X, Y, Z
-    }
-    
-    private struct Rotation
-    {
-        public Rotation(Dimension direction, int position, int degrees)
-        {
-            Direction = direction;
-            Position = position;
-            Degrees = degrees;
-        }
-        
-        public Dimension Direction;
-        public int Position;
-        public int Degrees;
-    }
-
     public int degreesPerStep;
 
-    private int _frames = 0;
+    private int _frames;
     private List<Rotation> _rotations;
 
     // Start is called before the first frame update
@@ -49,35 +31,11 @@ public class CubeRotator : MonoBehaviour
 
         Rotation curRotation = _rotations[0];
 
-        Vector3 rotationAxis = curRotation.Direction switch
-        {
-            Dimension.X => Vector3.right,
-            Dimension.Y => Vector3.up,
-            Dimension.Z => Vector3.back,
-            _ => throw new ArgumentOutOfRangeException()
-        };
-
         int step = curRotation.Degrees > 0
             ? Math.Min(curRotation.Degrees, degreesPerStep)
             : Math.Max(curRotation.Degrees, -degreesPerStep);
 
-        foreach (Transform child in transform)
-        {
-            Vector3 childPos = child.position;
-            float dimensionPos = curRotation.Direction switch
-            {
-                Dimension.X => childPos.x,
-                Dimension.Y => childPos.y,
-                Dimension.Z => childPos.z,
-                _ => throw new ArgumentOutOfRangeException()
-            };
-
-            if (Mathf.RoundToInt(dimensionPos) == curRotation.Position)
-            {
-                child.RotateAround(Vector3.zero, rotationAxis, step);
-            }
-        }
-
+        curRotation.Slice.Rotate(step);
         curRotation.Degrees -= step;
 
         if (curRotation.Degrees == 0)
@@ -90,11 +48,11 @@ public class CubeRotator : MonoBehaviour
     {
         for (var i = 0; i < 25; i++)
         {
-            Dimension randomDimension = Random.Range(0, 3) switch
+            Direction randomDirection = Random.Range(0, 3) switch
             {
-                0 => Dimension.X,
-                1 => Dimension.Y,
-                2 => Dimension.Z,
+                0 => Direction.X,
+                1 => Direction.Y,
+                2 => Direction.Z,
                 _ => throw new ArgumentOutOfRangeException()
             };
 
@@ -109,7 +67,7 @@ public class CubeRotator : MonoBehaviour
                 _ => throw new ArgumentOutOfRangeException()
             };
             
-            _rotations.Add(new Rotation(randomDimension, randomPosition, randomDegrees));
+            _rotations.Add(new Rotation(randomDirection, randomPosition, randomDegrees));
         }
     }
 }
