@@ -99,4 +99,16 @@ public class CubePart : MonoBehaviour
     {
         return RoundVector3(transform.position);
     }
+
+    public bool IsCenter()
+    {
+        Vector3Int pos = GetPosition();
+        
+        var total = 0;
+        total += Math.Abs(pos.x);
+        total += Math.Abs(pos.y);
+        total += Math.Abs(pos.z);
+
+        return total == 1;
+    }
 }

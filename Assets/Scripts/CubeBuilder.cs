@@ -5,12 +5,14 @@ using UnityEngine;
 public class CubeBuilder : MonoBehaviour
 {
     public GameObject cubePartPrefab;
-    public static List<CubePart> Parts; 
+    public static Transform Root;
+    public static List<CubePart> Parts;
 
     // Start is called before the first frame update
     public void Start()
     {
         Parts = new List<CubePart>();
+        Root = transform;
         
         for (int x = -1; x < 2; x++)
         {
@@ -19,7 +21,7 @@ public class CubeBuilder : MonoBehaviour
                 for (int z = -1; z < 2; z++)
                 {
                     GameObject cubePart = Instantiate(cubePartPrefab, new Vector3(x, y, z), Quaternion.identity);
-                    cubePart.transform.parent = transform;
+                    cubePart.transform.parent = Root;
 
                     var cubePartComp = cubePart.GetComponent<CubePart>();
                     Parts.Add(cubePartComp);

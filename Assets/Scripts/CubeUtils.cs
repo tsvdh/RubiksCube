@@ -1,4 +1,7 @@
-﻿namespace CubeUtils
+﻿using System;
+using UnityEngine;
+
+namespace CubeUtils
 {
     public enum Color
     {
@@ -18,19 +21,16 @@
     
     public struct Rotation
     {
-        public Rotation(Direction direction, int position, int degrees)
+
+        public Rotation(Direction direction, int position, int degrees, Vector3 viewDirection)
         {
             Slice = new CubeSlice(direction, position);
             Degrees = degrees;
-        }
-
-        public Rotation(CubeSlice slice, int degrees)
-        {
-            Slice = slice;
-            Degrees = degrees;
+            ViewDirection = viewDirection;
         }
 
         public CubeSlice Slice;
         public int Degrees;
+        public Vector3 ViewDirection;
     }
 }

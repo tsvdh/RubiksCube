@@ -20,11 +20,9 @@ public class CubeSlice
         {
             Direction.X => Vector3.right,
             Direction.Y => Vector3.up,
-            Direction.Z => Vector3.back,
+            Direction.Z => Vector3.forward,
             _ => throw new ArgumentOutOfRangeException()
         };
-        
-        // GameObject.Find("Cube").GetComponent<CubeBuilder>();
 
         foreach (CubePart part in CubeBuilder.Parts)
         {
