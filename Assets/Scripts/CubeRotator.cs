@@ -2,13 +2,12 @@ using System;
 using System.Collections.Generic;
 using CubeUtils;
 using UnityEngine;
-using UnityEngine.UIElements;
 using Random = UnityEngine.Random;
 
 public class CubeRotator : MonoBehaviour
 {
     public int degreesPerStep;
-    public bool InstantScramble;
+    public bool instantScramble;
 
     private int _frames;
     private List<Rotation> _rotations;
@@ -21,10 +20,7 @@ public class CubeRotator : MonoBehaviour
         _rotations = new List<Rotation>();
         _solver = new CubeSolver();
 
-        _rotations.Add(new Rotation(Direction.X, 0, -90, Vector3.forward));
-        _rotations.Add(new Rotation(Direction.Y, 0, 90, Vector3.forward));
-        
-        // Scramble(InstantScramble);
+        Scramble(instantScramble);
     }
 
     // FixedUpdate is called once per logic frame
@@ -49,8 +45,11 @@ public class CubeRotator : MonoBehaviour
         }
 
         Rotation curRotation = _rotations[0];
+
+        Vector3Int lookDirection = Vector3Int.RoundToInt(curRotation.FacingDirection);
+        lookDirection.z *= -1;
         
-        transform.LookAt(curRotation.ViewDirection);
+        transform.LookAt(lookDirection);
 
         int step = curRotation.Degrees > 0
             ? Math.Min(curRotation.Degrees, degreesPerStep)
@@ -90,10 +89,10 @@ public class CubeRotator : MonoBehaviour
                 _ => throw new ArgumentOutOfRangeException()
             };
             
-            if (!instant)
-                _rotations.Add(new Rotation(randomDirection, randomPosition, randomDegrees, Vector3.forward));
-            else
+            if (instant)
                 new CubeSlice(randomDirection, randomPosition).Rotate(randomDegrees);
+            else
+                _rotations.Add(new Rotation(randomDirection, randomPosition, randomDegrees, Vector3.forward));
         }
     }
 }

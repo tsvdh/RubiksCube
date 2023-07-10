@@ -34,20 +34,10 @@ public class CubePart : MonoBehaviour
             
             Vector3 dir = mesh.normals[0];
             dir = side.localToWorldMatrix.MultiplyVector(dir);
-            _sideColors.Add(RoundVector3(dir), Color.Black);
+            _sideColors.Add(Vector3Int.RoundToInt(dir), Color.Black);
             
             side.GetComponent<MeshRenderer>().material = _black;
         }
-    }
-
-    private static Vector3Int RoundVector3(Vector3 vector)
-    {
-        return new Vector3Int
-        {
-            x = Mathf.RoundToInt(vector.x),
-            y = Mathf.RoundToInt(vector.y),
-            z = Mathf.RoundToInt(vector.z)
-        };
     }
     
     private Material GetMaterial(Color color)
@@ -72,7 +62,7 @@ public class CubePart : MonoBehaviour
             Vector3 dir = side.GetComponent<MeshFilter>().mesh.normals[0];
             dir = side.localToWorldMatrix.MultiplyVector(dir);
             
-            if (RoundVector3(dir).Equals(sideNormal))
+            if (Vector3Int.RoundToInt(dir).Equals(sideNormal))
             {
                 side.GetComponent<MeshRenderer>().material = GetMaterial(color);
                 _sideColors[sideNormal] = color;
@@ -89,7 +79,7 @@ public class CubePart : MonoBehaviour
             if (entry.Value != Color.Black)
             {
                 Vector3 transformedDir = transform.localToWorldMatrix.MultiplyVector(entry.Key);
-                nonBlackColors.Add(RoundVector3(transformedDir), entry.Value);
+                nonBlackColors.Add(Vector3Int.RoundToInt(transformedDir), entry.Value);
             }
         }
         return nonBlackColors;
@@ -97,7 +87,7 @@ public class CubePart : MonoBehaviour
 
     public Vector3Int GetPosition()
     {
-        return RoundVector3(transform.position);
+        return Vector3Int.RoundToInt(transform.position);
     }
 
     public bool IsCenter()

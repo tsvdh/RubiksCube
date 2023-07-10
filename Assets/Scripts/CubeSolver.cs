@@ -60,7 +60,7 @@ public class CubeSolver
 
                         int degrees = _sides.Contains(direction) ? -90 : -180;
                         
-                        rotations.Add(new Rotation(Direction.X, 0, degrees, InvertVector3Int(direction)));
+                        rotations.Add(new Rotation(Direction.X, 0, degrees, direction));
                         
                         break;
                     }
