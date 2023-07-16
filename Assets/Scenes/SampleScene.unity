@@ -487,4 +487,4 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   degreesPerStep: 2
-  InstantScramble: 1
+  instantScramble: 1

@@ -90,7 +90,7 @@ public class CubePart : MonoBehaviour
         return Vector3Int.RoundToInt(transform.position);
     }
 
-    public bool IsCenter()
+    private int GetDirsNotZero()
     {
         Vector3Int pos = GetPosition();
         
@@ -99,6 +99,21 @@ public class CubePart : MonoBehaviour
         total += Math.Abs(pos.y);
         total += Math.Abs(pos.z);
 
-        return total == 1;
+        return total;
+    }
+
+    public bool IsCenter()
+    {
+        return GetDirsNotZero() == 1;
+    }
+
+    public bool IsEdge()
+    {
+        return GetDirsNotZero() == 2;
+    }
+
+    public bool IsCorner()
+    {
+        return GetDirsNotZero() == 3;
     }
 }

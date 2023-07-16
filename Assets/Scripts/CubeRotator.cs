@@ -92,7 +92,7 @@ public class CubeRotator : MonoBehaviour
             if (instant)
                 new CubeSlice(randomDirection, randomPosition).Rotate(randomDegrees);
             else
-                _rotations.Add(new Rotation(randomDirection, randomPosition, randomDegrees, Vector3.forward));
+                _rotations.Add(new Rotation(randomDirection, randomPosition, randomDegrees, Vector3Int.forward));
         }
     }
 }
