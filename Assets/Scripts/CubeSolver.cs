@@ -137,7 +137,7 @@ public class CubeSolver
                                             var upSlice = new CubeSlice(Direction.Y, 1);
 
                                             int degrees = upSlice.GetRotationDegrees(otherDirection, side);
-                                                
+
                                             rotations.Add(new Rotation(upSlice, degrees, side));
                                             rotations.Add(new Rotation(otherSlice, 180, Vector3Int.back));
                                             return rotations;
@@ -160,19 +160,23 @@ public class CubeSolver
                         else if (part.GetPosition().y == 1)
                         {
                             // Upper layer not facing up, so orient to face up
-                            rotations.Add(new Rotation(Direction.Z, -1, 90, whiteDirection));
+                            rotations.Add(new Rotation(Direction.Z, -1, -90, whiteDirection));
                             rotations.Add(new Rotation(Direction.X, 1, 90, whiteDirection));
-                            rotations.Add(new Rotation(Direction.Y, 1, 90, whiteDirection));
+                            rotations.Add(new Rotation(Direction.Y, 1, -90, whiteDirection));
                             rotations.Add(new Rotation(Direction.X, 1, -90, whiteDirection));
+                            rotations.Add(new Rotation(Direction.Z, -1, 90, whiteDirection));
+                            return rotations;
                         }
                         else
                         {
                             // In middle layer, put in top layer with white up
                             var sideSlice = new CubeSlice(otherDirection);
                             int degrees = sideSlice.GetRotationDegrees(whiteDirection, Vector3Int.up);
-                            rotations.Add(new Rotation(sideSlice, degrees, whiteDirection));
-                            rotations.Add(new Rotation(Direction.Y, 1, 90, whiteDirection));
-                            rotations.Add(new Rotation(sideSlice, -degrees, whiteDirection));
+
+                            rotations.Add(new Rotation(sideSlice, degrees, Vector3Int.back));
+                            rotations.Add(new Rotation(Direction.Y, 1, 90, Vector3Int.back));
+                            rotations.Add(new Rotation(sideSlice, -degrees, Vector3Int.back));
+                            return rotations;
                         }
                     }
                 }

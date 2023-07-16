@@ -27,13 +27,13 @@ public class CubeBuilder : MonoBehaviour
                     Parts.Add(cubePartComp);
                     
                     if (x == -1)
-                        cubePartComp.ColorSide(Vector3Int.left, Color.Red);
+                        cubePartComp.ColorSide(Vector3Int.left, Color.Orange);
                     if (x == 1)
-                        cubePartComp.ColorSide(Vector3Int.right, Color.Orange);
+                        cubePartComp.ColorSide(Vector3Int.right, Color.Red);
                     if (y == -1)
-                        cubePartComp.ColorSide(Vector3Int.down, Color.Yellow);
+                        cubePartComp.ColorSide(Vector3Int.down, Color.White);
                     if (y == 1) 
-                        cubePartComp.ColorSide(Vector3Int.up, Color.White);
+                        cubePartComp.ColorSide(Vector3Int.up, Color.Yellow);
                     if (z == -1) 
                         cubePartComp.ColorSide(Vector3Int.back, Color.Blue);
                     if (z == 1)
