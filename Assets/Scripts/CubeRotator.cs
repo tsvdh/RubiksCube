@@ -2,12 +2,16 @@ using System;
 using System.Collections.Generic;
 using CubeUtils;
 using UnityEngine;
+using UnityEngine.Serialization;
 using Random = UnityEngine.Random;
 
 public class CubeRotator : MonoBehaviour
 {
     public int degreesPerStep;
     public bool instantScramble;
+    public bool autoSolve;
+    public bool instantSolve;
+    public CubeSolver.State solveUntil;
 
     private int _frames;
     private List<Rotation> _rotations;
@@ -21,6 +25,17 @@ public class CubeRotator : MonoBehaviour
         _solver = new CubeSolver();
 
         Scramble(instantScramble);
+
+        if (instantSolve)
+        {
+            while (_solver.CurrentState != solveUntil)
+            {
+                foreach (Rotation rotation in _solver.SolveStep())
+                {
+                    rotation.Slice.Rotate(rotation.Degrees);
+                }
+            }
+        }
     }
 
     // FixedUpdate is called once per logic frame
@@ -29,21 +44,20 @@ public class CubeRotator : MonoBehaviour
         if (_frames++ < 10)
             return;
 
-        if (_rotations.Count == 0)
+        bool shouldRotate = Input.GetKeyDown(KeyCode.P) || (autoSolve && _solver.CurrentState < solveUntil);
+        
+        if (_rotations.Count == 0 && shouldRotate)
         {
-            if (!Input.GetKeyDown(KeyCode.P))
-                return;
-            
             Debug.Log($"Current State: {Enum.GetName(typeof(CubeSolver.State), _solver.CurrentState)}");
-            
+
             List<Rotation> rotations = _solver.SolveStep();
-            
-            if (rotations.Count == 0)
-                return;
             
             _rotations.AddRange(rotations);
         }
 
+        if (_rotations.Count == 0)
+                return;
+        
         Rotation curRotation = _rotations[0];
 
         Vector3Int lookDirection = Vector3Int.RoundToInt(curRotation.FacingDirection);

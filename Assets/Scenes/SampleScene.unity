@@ -488,3 +488,6 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   degreesPerStep: 2
   instantScramble: 1
+  autoSolve: 1
+  instantSolve: 0
+  solveUntil: 1

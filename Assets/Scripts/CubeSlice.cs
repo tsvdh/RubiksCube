@@ -198,15 +198,4 @@ public class CubeSlice
 
         return overlappingParts;
     }
-
-    public static List<CubeSlice> GetSlices(CubePart part)
-    {
-        Vector3Int partPos = part.GetPosition();
-        return new List<CubeSlice>
-        {
-            new(Direction.X, partPos.x),
-            new(Direction.Y, partPos.y),
-            new(Direction.Z, partPos.z)
-        };
-    }
 }

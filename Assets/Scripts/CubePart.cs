@@ -1,6 +1,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using CubeUtils;
 using UnityEngine;
 using Color = CubeUtils.Color;
 
@@ -115,5 +116,16 @@ public class CubePart : MonoBehaviour
     public bool IsCorner()
     {
         return GetDirsNotZero() == 3;
+    }
+    
+    public List<CubeSlice> GetSlices()
+    {
+        Vector3Int partPos = GetPosition();
+        return new List<CubeSlice>
+        {
+            new(Direction.X, partPos.x),
+            new(Direction.Y, partPos.y),
+            new(Direction.Z, partPos.z)
+        };
     }
 }
