@@ -7,11 +7,17 @@ using Random = UnityEngine.Random;
 
 public class CubeRotator : MonoBehaviour
 {
+    public enum SolvingMode
+    {
+        Manual,
+        Automatic,
+        Instant
+    }
+    
     public int degreesPerStep;
     public bool instantScramble;
-    public bool autoSolve;
-    public bool instantSolve;
-    public CubeSolver.State solveUntil;
+    public SolvingMode solvingMode;
+    public CubeSolver.State desiredState;
 
     private int _frames;
     private List<Rotation> _rotations;
@@ -23,19 +29,29 @@ public class CubeRotator : MonoBehaviour
     {
         _rotations = new List<Rotation>();
         _solver = new CubeSolver();
-
+        
         Scramble(instantScramble);
+        _solver.CheckState();
 
-        if (instantSolve)
+        if (solvingMode == SolvingMode.Instant)
         {
-            while (_solver.CurrentState != solveUntil)
+            for (var i = 0; i < 100; i++)
             {
+                _solver.CheckState();
+                
+                if (_solver.CurrentState > desiredState)
+                    break;
+                
                 foreach (Rotation rotation in _solver.SolveStep())
                 {
+                    transform.LookAt(GetLookDirection(rotation));
                     rotation.Slice.Rotate(rotation.Degrees);
+                    transform.LookAt(Vector3.forward);
                 }
             }
         }
+        
+        Debug.Log(_solver.CurrentState);
     }
 
     // FixedUpdate is called once per logic frame
@@ -43,11 +59,16 @@ public class CubeRotator : MonoBehaviour
     {
         if (_frames++ < 10)
             return;
-
-        bool shouldRotate = Input.GetKeyDown(KeyCode.P) || (autoSolve && _solver.CurrentState < solveUntil);
         
-        if (_rotations.Count == 0 && shouldRotate)
+        if (_rotations.Count == 0)
         {
+            _solver.CheckState();
+            
+            bool shouldRotate = Input.GetKeyDown(KeyCode.P) 
+                                || (solvingMode == SolvingMode.Automatic && _solver.CurrentState <= desiredState);
+            if (!shouldRotate)
+                return;
+
             Debug.Log($"Current State: {Enum.GetName(typeof(CubeSolver.State), _solver.CurrentState)}");
 
             List<Rotation> rotations = _solver.SolveStep();
@@ -59,11 +80,8 @@ public class CubeRotator : MonoBehaviour
                 return;
         
         Rotation curRotation = _rotations[0];
-
-        Vector3Int lookDirection = Vector3Int.RoundToInt(curRotation.FacingDirection);
-        lookDirection.z *= -1;
         
-        transform.LookAt(lookDirection);
+        transform.LookAt(GetLookDirection(curRotation));
 
         int step = curRotation.Degrees > 0
             ? Math.Min(curRotation.Degrees, degreesPerStep)
@@ -78,6 +96,13 @@ public class CubeRotator : MonoBehaviour
             _rotations.RemoveAt(0);
         else
             _rotations[0] = curRotation;
+    }
+
+    private static Vector3Int GetLookDirection(Rotation rotation)
+    {
+        Vector3Int lookDirection = Vector3Int.RoundToInt(rotation.FacingDirection);
+        lookDirection.z *= -1;
+        return lookDirection;
     }
 
     private void Scramble(bool instant)

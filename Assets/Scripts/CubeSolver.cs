@@ -53,13 +53,6 @@ public class CubeSolver
                         // Found white center
                         Vector3Int direction = new List<Vector3Int>(colorDict.Keys)[0];
 
-                        if (direction.Equals(Vector3Int.down))
-                        {
-                            // White center in position
-                            CurrentState = State.WhiteCross;
-                            return SolveStep();
-                        }
-
                         // Rotate to down center
                         int degrees = _sides.Contains(direction) ? -90 : -180;
                         
@@ -71,8 +64,6 @@ public class CubeSolver
                 throw new SystemException();
             
             case State.WhiteCross:
-                var numEdgesGood = 0;
-
                 // Order top to bottom
                 CubeBuilder.Parts.Sort((a, b) => b.GetPosition().y.CompareTo(a.GetPosition().y));
                 
@@ -100,8 +91,6 @@ public class CubeSolver
 
                     if (whiteDirection.Equals(Vector3Int.down) || whiteDirection.Equals(Vector3Int.up))
                     {
-                        int edgesGoodBefore = numEdgesGood;
-                        
                         // Find corresponding center piece
                         foreach (CubeSlice slice in part.GetSlices())
                         {
@@ -118,8 +107,6 @@ public class CubeSolver
                                         rotations.Add(new Rotation(Direction.Z, -1, 180, otherDirection));
                                         return rotations;
                                     }
-                                    
-                                    numEdgesGood++;
                                     break;
                                 }
 
@@ -152,9 +139,6 @@ public class CubeSolver
                                 throw new SystemException();
                             }
                         }
-                        
-                        if (edgesGoodBefore == numEdgesGood)
-                            throw new SystemException();
                     }
                     else if (part.GetPosition().y == -1)
                     {
@@ -185,17 +169,9 @@ public class CubeSolver
                     }
                 }
 
-                if (numEdgesGood == 4)
-                {
-                    CurrentState = State.WhiteCorners;
-                    return SolveStep();
-                }
-
                 throw new SystemException();
             
             case State.WhiteCorners:
-                var numCornersGood = 0;
-                
                 // Order top to bottom
                 CubeBuilder.Parts.Sort((a, b) => b.GetPosition().y.CompareTo(a.GetPosition().y));
 
@@ -207,40 +183,10 @@ public class CubeSolver
                         continue;
 
                     // Found white corner
-                    (Vector3Int whiteDirection, List<Vector3Int> otherDirections, List<Vector3Int> sides) = GetCornerDirections(part);
+                    (Vector3Int whiteDirection, _, List<Vector3Int> sides) = GetCornerDirections(part);
 
                     // Find wanted corner position
-                    CubePart wantedUpCorner = default;
-                    
-                    var upSlice = new CubeSlice(Vector3Int.up);
-                    foreach (CubePart corner in upSlice.GetCorners())
-                    {
-                        var centerColors = new List<Color>();
-
-                        List<CubeSlice> slices = corner.GetSlices();
-                        slices.Remove(upSlice);
-                        foreach (CubeSlice slice in slices)
-                            centerColors.Add(slice.GetCenter().GetSideColors()[slice.GetDirection()]);
-
-                        var correctCorner = true; 
-                        foreach (Vector3Int otherDirection in otherDirections)
-                        {
-                            if (!centerColors.Contains(colorDict[otherDirection]))
-                            {
-                                correctCorner = false;
-                                break;
-                            }
-                        }
-
-                        if (correctCorner)
-                        {
-                            wantedUpCorner = corner;
-                            break;
-                        }
-                    }
-
-                    if (wantedUpCorner == default)
-                        throw new SystemException();
+                    CubePart wantedUpCorner = GetCorrectCornerPosition(part);
 
                     Vector3Int otherSide;
                     int upperDegrees;
@@ -254,7 +200,6 @@ public class CubeSolver
                             && partPos.y == -1)
                         {
                             // In right position
-                            numCornersGood++;
                             continue;
                         }
                         
@@ -278,6 +223,7 @@ public class CubeSolver
                     }
 
                     // In upper slice, rotate to wanted corner
+                    var upSlice = new CubeSlice(Vector3Int.up);
                     int upperOrientationDegrees = upSlice.GetRotationDegrees(part, wantedUpCorner);
                     rotations.Add(new Rotation(upSlice, upperOrientationDegrees, Vector3Int.back));
                     
@@ -321,16 +267,71 @@ public class CubeSolver
                     _root.RotateAround(Vector3.zero, Vector3.up, -upperOrientationDegrees);
                 }
 
-                if (numCornersGood == 4)
-                {
-                    CurrentState = State.MiddleEdges;
-                    return SolveStep();
-                }
-
                 throw new SystemException();
             default:
                 return new List<Rotation>();
         }
+    }
+
+    public State CheckState()
+    {
+        switch (CurrentState)
+        {
+            case State.WhiteCenter:
+                Color color = new CubeSlice(Vector3Int.down).GetCenter().GetSideColors()[Vector3Int.down];
+                // Bottom center must be white
+                if (color == Color.White)
+                    CurrentState = State.WhiteCross;
+                
+                return CurrentState;
+            
+            case State.WhiteCross:
+                foreach (Vector3Int side in _sides)
+                {
+                    var sideSlice = new CubeSlice(side);
+                    Color centerColor = sideSlice.GetCenter().GetSideColors()[side];
+                    foreach (CubePart edge in sideSlice.GetEdges())
+                    {
+                        if (edge.GetPosition().y != -1)
+                            continue;
+                        
+                        // Examining lower edge
+                        Dictionary<Vector3Int, Color> colorDict = edge.GetSideColors();
+
+                        // Bottom edge must have white down and center color to side
+                        if (colorDict[Vector3Int.down] != Color.White 
+                            || colorDict[side] != centerColor)
+                            return CurrentState;
+
+                        break;
+                    }
+                }
+
+                CurrentState = State.WhiteCorners;
+                return CurrentState;
+            
+            case State.WhiteCorners:
+                List<CubePart> corners = new CubeSlice(Vector3Int.down).GetCorners();
+                foreach (CubePart part in corners)
+                {
+                    // Bottom corner must have a white part
+                    if (!part.GetSideColors().ContainsValue(Color.White))
+                        return CurrentState;
+                    
+                    Vector3Int partPos = part.GetPosition();
+                    Vector3Int correctPos = GetCorrectCornerPosition(part).GetPosition();
+                    
+                    // Each bottom corner must have white down and have the right colors for the centers
+                    if (part.GetSideColors()[Vector3Int.down] != Color.White
+                        || !partPos.Equals(correctPos))
+                        return CurrentState;
+                }
+                
+                CurrentState = State.MiddleEdges;
+                return CurrentState;
+        }
+
+        return State.Solved;
     }
 
     private static (Vector3Int, List<Vector3Int>, List<Vector3Int>) GetCornerDirections(CubePart part)
@@ -340,7 +341,7 @@ public class CubeSolver
         Vector3Int whiteDirection = default;
         var otherDirections = new List<Vector3Int>();
 
-        foreach (KeyValuePair<Vector3Int,Color> pair in colorDict)
+        foreach (KeyValuePair<Vector3Int, Color> pair in colorDict)
         {
             if (pair.Value == Color.White)
                 whiteDirection = pair.Key;
@@ -365,5 +366,48 @@ public class CubeSolver
             y = inVec.y *= -1,
             z = inVec.z *= -1
         };
+    }
+
+    private static CubePart GetCorrectCornerPosition(CubePart part)
+    {
+        CubePart wantedUpCorner = default;
+
+        (_, List<Vector3Int> otherDirections, _) = GetCornerDirections(part);
+        Dictionary<Vector3Int, Color> colorDict = part.GetSideColors();
+
+        CubeSlice rotationSlice = part.GetPosition().y == 1
+            ? new CubeSlice(Vector3Int.up)
+            : new CubeSlice(Vector3Int.down);
+        
+        foreach (CubePart corner in rotationSlice.GetCorners())
+        {
+            var centerColors = new List<Color>();
+
+            List<CubeSlice> slices = corner.GetSlices();
+            slices.Remove(rotationSlice);
+            foreach (CubeSlice slice in slices)
+                centerColors.Add(slice.GetCenter().GetSideColors()[slice.GetDirection()]);
+
+            var correctCorner = true; 
+            foreach (Vector3Int otherDirection in otherDirections)
+            {
+                if (!centerColors.Contains(colorDict[otherDirection]))
+                {
+                    correctCorner = false;
+                    break;
+                }
+            }
+
+            if (correctCorner)
+            {
+                wantedUpCorner = corner;
+                break;
+            }
+        }
+
+        if (wantedUpCorner == default)
+            throw new SystemException();
+
+        return wantedUpCorner;
     }
 }

@@ -486,8 +486,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 65948182f839b9a4aa3ad9aaaa3d7ceb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  degreesPerStep: 2
+  degreesPerStep: 4
   instantScramble: 1
-  autoSolve: 1
-  instantSolve: 0
-  solveUntil: 1
+  solvingMode: 2
+  solveUntil: 2
