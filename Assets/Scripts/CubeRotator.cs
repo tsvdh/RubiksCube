@@ -2,7 +2,6 @@ using System;
 using System.Collections.Generic;
 using CubeUtils;
 using UnityEngine;
-using UnityEngine.Serialization;
 using Random = UnityEngine.Random;
 
 public class CubeRotator : MonoBehaviour
@@ -37,9 +36,7 @@ public class CubeRotator : MonoBehaviour
         {
             for (var i = 0; i < 100; i++)
             {
-                _solver.CheckState();
-                
-                if (_solver.CurrentState > desiredState)
+                if (_solver.CheckState() > desiredState)
                     break;
                 
                 foreach (Rotation rotation in _solver.SolveStep())
@@ -50,8 +47,6 @@ public class CubeRotator : MonoBehaviour
                 }
             }
         }
-        
-        Debug.Log(_solver.CurrentState);
     }
 
     // FixedUpdate is called once per logic frame
@@ -59,12 +54,12 @@ public class CubeRotator : MonoBehaviour
     {
         if (_frames++ < 10)
             return;
-        
+
         if (_rotations.Count == 0)
         {
             _solver.CheckState();
             
-            bool shouldRotate = Input.GetKeyDown(KeyCode.P) 
+            bool shouldRotate = Input.GetKey(KeyCode.P) 
                                 || (solvingMode == SolvingMode.Automatic && _solver.CurrentState <= desiredState);
             if (!shouldRotate)
                 return;
