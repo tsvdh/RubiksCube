@@ -1,11 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
 using CubeUtils;
 using JetBrains.Annotations;
 using UnityEngine;
 using Color = CubeUtils.Color;
-using Debug = System.Diagnostics.Debug;
 
 public class CubeSolver
 {
@@ -61,20 +59,7 @@ public class CubeSolver
     private List<Rotation> SolveWhiteCenter()
     {
         var rotations = new List<Rotation>();
-        CubePart partToMove = default;
-        
-        // Find white center
-        foreach (CubePart part in CubeBuilder.Parts)
-        {
-            if (part.IsCenter() && part.GetSideColors().ContainsValue(Color.White))
-            {
-                partToMove = part;
-                break;
-            }
-        }
-
-        if (partToMove == default)
-            throw new SystemException();
+        CubePart partToMove = GetWhiteCenterToSolve();
                 
         Vector3Int direction = new List<Vector3Int>(partToMove.GetSideColors().Keys)[0];
 
@@ -100,10 +85,8 @@ public class CubeSolver
             _nextPart = null;
         }
         else
-        {
             partToMove = GetWhiteEdgeToSolve();
-        }
-        
+
         (Vector3Int whiteDirection, Vector3Int otherDirection) = GetEdgeDirections(partToMove);
 
         if (whiteDirection.Equals(Vector3Int.down) || whiteDirection.Equals(Vector3Int.up))
@@ -111,7 +94,7 @@ public class CubeSolver
             // Find correct position in layer
             CubePart correctEdge = GetCorrectEdgePositionInSlice(partToMove);
 
-            if (correctEdge.GetPosition().Equals(partToMove.GetPosition()))
+            if (correctEdge.Equals(partToMove))
             {
                 // In correct position
                 if (whiteDirection.Equals(Vector3Int.down))
@@ -173,102 +156,103 @@ public class CubeSolver
     private List<Rotation> SolveWhiteCorners()
     {
         var rotations = new List<Rotation>();
-        CubePart partToMove = default;
-
-        // Order top to bottom
-        CubeBuilder.Parts.Sort((a, b) => b.GetPosition().y.CompareTo(a.GetPosition().y));
-
-        foreach (CubePart part in CubeBuilder.Parts)
+        CubePart partToMove;
+        
+        if (_nextPart)
         {
-            Dictionary<Vector3Int, Color> colorDict = part.GetSideColors();
+            partToMove = _nextPart;
+            _nextPart = null;
+        }
+        else
+            partToMove = GetWhiteCornerToSolve();
 
-            if (!(part.IsCorner() && colorDict.ContainsValue(Color.White)))
-                continue;
+        Dictionary<Vector3Int, Color> colorDict = partToMove.GetSideColors();
+        
+        (Vector3Int whiteDirection, _, List<Vector3Int> sides) = GetCornerDirections(partToMove);
 
-            // Found white corner
-            (Vector3Int whiteDirection, _, List<Vector3Int> sides) = GetCornerDirections(part);
+        // Find wanted corner position
+        CubePart wantedCorner = GetCorrectCornerPositionInSlice(partToMove);
 
-            // Find wanted corner position
-            CubePart wantedCorner = GetCorrectCornerPositionInSlice(part);
+        Vector3Int otherSide;
+        int upperDegrees;
+        int sideDegrees;
 
-            Vector3Int otherSide;
-            int upperDegrees;
-
-            Vector3Int partPos = part.GetPosition();
-            Vector3Int wantedCornerPos = wantedCorner.GetPosition();
-            if (partPos.y == -1)
+        if (partToMove.GetPosition().y == -1)
+        {
+            // In bottom slice
+            if (partToMove.Equals(wantedCorner) && colorDict[Vector3Int.down] == Color.White)
             {
-                // In bottom slice
-                if (partPos.Equals(wantedCornerPos) && colorDict[Vector3Int.down] == Color.White)
-                {
-                    // In right position
-                    continue;
-                }
-                
-                // In wrong position, find twisting side and twist up
-                Vector3Int rotationSide = whiteDirection.Equals(Vector3Int.down)
-                    ? sides[0]
-                    : whiteDirection;
-                
-                sides.Remove(rotationSide);
-                otherSide = sides[0];
-
-                var rotationSlice = new CubeSlice(rotationSide);
-                
-                int sideDegrees = rotationSlice.GetRotationDegrees(otherSide, Vector3Int.up);
-                upperDegrees = new CubeSlice(Vector3Int.up).GetRotationDegrees(rotationSide, otherSide);
-                
-                rotations.Add(new Rotation(rotationSlice, sideDegrees, Vector3Int.back));
-                rotations.Add(new Rotation(Direction.Y, 1, upperDegrees, Vector3Int.back));
-                rotations.Add(new Rotation(rotationSlice, -sideDegrees, Vector3Int.back));
+                // In right position
                 return rotations;
             }
-
-            // In upper slice, rotate to wanted corner
-            var upSlice = new CubeSlice(Vector3Int.up);
-            int upperOrientationDegrees = upSlice.GetRotationDegrees(part, wantedCorner);
-            rotations.Add(new Rotation(upSlice, upperOrientationDegrees, Vector3Int.back));
             
-            // Move view according to orientation
-            _root.RotateAround(Vector3.zero, Vector3.up, upperOrientationDegrees);
-
-            CubeSlice sideSlice;
-            int rotationSideDegrees;
-
-            if (whiteDirection.Equals(Vector3Int.up))
-            {
-                (Vector3Int _, List<Vector3Int> _, List<Vector3Int> newSides) = GetCornerDirections(part);
-                
-                // Orient white to side
-                sideSlice = new CubeSlice(newSides[0]);
-                rotationSideDegrees = sideSlice.GetRotationDegrees(newSides[1], Vector3Int.up);
-                upperDegrees = upSlice.GetRotationDegrees(newSides[0], newSides[1]);
-                
-                rotations.Add(new Rotation(sideSlice, rotationSideDegrees, Vector3Int.back));
-                rotations.Add(new Rotation(upSlice, upperDegrees * 2, Vector3Int.back));
-                rotations.Add(new Rotation(sideSlice, -rotationSideDegrees, Vector3Int.back));
-                rotations.Add(new Rotation(upSlice, -upperDegrees, Vector3Int.back));
-            }
+            // In wrong position, find twisting side and twist up
+            Vector3Int rotationSide = whiteDirection.Equals(Vector3Int.down)
+                ? sides[0]
+                : whiteDirection;
             
-            // twist corner to correct position
-            (Vector3Int newWhiteDirection, List<Vector3Int> newOtherDirections, List<Vector3Int> _) = GetCornerDirections(part);
-            
-            newOtherDirections.RemoveAll(dir => dir.Equals(Vector3Int.up));
-            otherSide = newOtherDirections[0];
-            sideSlice = new CubeSlice(newWhiteDirection);
+            sides.Remove(rotationSide);
+            otherSide = sides[0];
 
-            rotationSideDegrees = sideSlice.GetRotationDegrees(otherSide, Vector3Int.up);
-            upperDegrees = upSlice.GetRotationDegrees(newWhiteDirection, otherSide);
+            var rotationSlice = new CubeSlice(rotationSide);
             
-            rotations.Add(new Rotation(sideSlice, rotationSideDegrees, Vector3Int.back));
+            sideDegrees = rotationSlice.GetRotationDegrees(otherSide, Vector3Int.up);
+            upperDegrees = new CubeSlice(Vector3Int.up).GetRotationDegrees(rotationSide, otherSide);
+            
+            rotations.Add(new Rotation(rotationSlice, sideDegrees, Vector3Int.back));
+            rotations.Add(new Rotation(Direction.Y, 1, upperDegrees, Vector3Int.back));
+            rotations.Add(new Rotation(rotationSlice, -sideDegrees, Vector3Int.back));
+            return rotations;
+        }
+        
+        var upSlice = new CubeSlice(Vector3Int.up);
+
+        // In upper slice
+        if (!partToMove.Equals(wantedCorner))
+        {
+            // rotate to wanted corner
+            upperDegrees = upSlice.GetRotationDegrees(partToMove, wantedCorner);
             rotations.Add(new Rotation(upSlice, upperDegrees, Vector3Int.back));
-            rotations.Add(new Rotation(sideSlice, -rotationSideDegrees, Vector3Int.back));
             
-            // Move view back
-            _root.RotateAround(Vector3.zero, Vector3.up, -upperOrientationDegrees);
+            _nextPart = partToMove;
+            return rotations;
         }
 
-        throw new SystemException();
+        CubeSlice sideSlice;
+
+        if (whiteDirection.Equals(Vector3Int.up))
+        {
+            // Orient white to side
+            (Vector3Int _, List<Vector3Int> _, List<Vector3Int> newSides) = GetCornerDirections(partToMove);
+            
+            sideSlice = new CubeSlice(newSides[0]);
+            sideDegrees = sideSlice.GetRotationDegrees(newSides[1], Vector3Int.up);
+            upperDegrees = upSlice.GetRotationDegrees(newSides[0], newSides[1]);
+            
+            rotations.Add(new Rotation(sideSlice, sideDegrees, Vector3Int.back));
+            rotations.Add(new Rotation(upSlice, upperDegrees * 2, Vector3Int.back));
+            rotations.Add(new Rotation(sideSlice, -sideDegrees, Vector3Int.back));
+            rotations.Add(new Rotation(upSlice, -upperDegrees, Vector3Int.back));
+
+            _nextPart = partToMove;
+            return rotations;
+        }
+        
+        // put corner in correct position
+        (Vector3Int newWhiteDirection, List<Vector3Int> newOtherDirections, List<Vector3Int> _) = GetCornerDirections(partToMove);
+        
+        newOtherDirections.RemoveAll(dir => dir.Equals(Vector3Int.up));
+        otherSide = newOtherDirections[0];
+        sideSlice = new CubeSlice(newWhiteDirection);
+
+        sideDegrees = sideSlice.GetRotationDegrees(otherSide, Vector3Int.up);
+        upperDegrees = upSlice.GetRotationDegrees(newWhiteDirection, otherSide);
+        
+        rotations.Add(new Rotation(sideSlice, sideDegrees, Vector3Int.back));
+        rotations.Add(new Rotation(upSlice, upperDegrees, Vector3Int.back));
+        rotations.Add(new Rotation(sideSlice, -sideDegrees, Vector3Int.back));
+
+        return rotations;
     }
 
     public State CheckState()
@@ -487,7 +471,29 @@ public class CubeSolver
         return !edge.Equals(GetCorrectEdgePositionInSlice(edge));
     }
 
-    private CubePart GetWhiteEdgeToSolve()
+    private static bool IsWhiteCornerCorrect(CubePart corner)
+    {
+        if (corner.GetPosition().y != -1)
+            return false;
+
+        if (corner.GetSideColors()[Vector3Int.down] != Color.White)
+            return false;
+
+        return !corner.Equals(GetCorrectCornerPositionInSlice(corner));
+    }
+
+    private static CubePart GetWhiteCenterToSolve()
+    {
+        foreach (CubePart part in CubeBuilder.Parts)
+        {
+            if (part.IsCenter() && part.GetSideColors().ContainsValue(Color.White))
+                return part;
+        }
+
+        throw new SystemException();
+    }
+
+    private static CubePart GetWhiteEdgeToSolve()
     {
         var candidates = new List<CubePart>();
         
@@ -531,5 +537,61 @@ public class CubeSolver
         });
 
         return candidates[0];
+    }
+
+    private CubePart GetWhiteCornerToSolve()
+    {
+        var candidates = new List<CubePart>();
+
+        foreach (CubePart part in CubeBuilder.Parts)
+        {
+            if (part.IsCorner() && part.GetSideColors().ContainsValue(Color.White) 
+                                && !IsWhiteCornerCorrect(part))
+                candidates.Add(part);
+        }
+
+        candidates.Sort((a, b) =>
+        {
+            // Order deterministically: top to bottom, white not up, x and z
+        
+            Vector3Int aPos = a.GetPosition();
+            Vector3Int bPos = b.GetPosition();
+
+            int heightDiff = bPos.y - aPos.y;
+            if (heightDiff != 0)
+                return heightDiff;
+
+            if (aPos.y == 1 && bPos.y == 1)
+            {
+                int aWhiteTop = a.GetSideColors()[Vector3Int.up] == Color.White ? 0 : 1;
+                int bWhiteTop = b.GetSideColors()[Vector3Int.up] == Color.White ? 0 : 1;
+                int topDiff = bWhiteTop - aWhiteTop;
+                if (topDiff != 0)
+                    return topDiff;
+            }
+
+            int xDiff = aPos.x - bPos.x;
+            if (xDiff != 0)
+                return xDiff;
+
+            int zDiff = aPos.z - bPos.z;
+            if (zDiff != 0)
+                return zDiff;
+
+            throw new SystemException();
+        });
+        
+        return candidates[0];
+    }
+
+    public CubePart GetPartToSolve()
+    {
+        return CurrentState switch
+        {
+            State.WhiteCenter => GetWhiteCenterToSolve(),
+            State.WhiteCross => _nextPart ? _nextPart : GetWhiteEdgeToSolve(),
+            State.WhiteCorners => _nextPart ? _nextPart : GetWhiteCornerToSolve(),
+            _ => throw new ArgumentOutOfRangeException()
+        };
     }
 }

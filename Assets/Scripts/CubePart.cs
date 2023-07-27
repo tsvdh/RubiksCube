@@ -11,6 +11,7 @@ public class CubePart : MonoBehaviour
     private Material _black;
     private Material _blue;
     private Material _green;
+    private Material _highlight;
     private Material _orange;
     private Material _red;
     private Material _white;
@@ -23,6 +24,7 @@ public class CubePart : MonoBehaviour
         _black = Resources.Load<Material>("Materials/Black");
         _blue = Resources.Load<Material>("Materials/Blue");
         _green = Resources.Load<Material>("Materials/Green");
+        _highlight = Resources.Load<Material>("Materials/Highlight");
         _orange = Resources.Load<Material>("Materials/Orange");
         _red = Resources.Load<Material>("Materials/Red");
         _white = Resources.Load<Material>("Materials/White");
@@ -39,7 +41,20 @@ public class CubePart : MonoBehaviour
             side.GetComponent<MeshRenderer>().material = _black;
         }
     }
-    
+
+    public override bool Equals(object other)
+    {
+        if (other == null)
+            return false;
+
+        if (GetType() != other.GetType())
+            return false;
+
+        return GetPosition().Equals(((CubePart)other).GetPosition());
+    }
+
+    public override int GetHashCode() { return GetPosition().GetHashCode(); }
+
     private Material GetMaterial(Color color)
     {
         return color switch
@@ -83,6 +98,12 @@ public class CubePart : MonoBehaviour
             }
         }
         return nonBlackColors;
+    }
+
+    public void SetHighlight(bool status)
+    {
+        transform.Find("Base").GetComponent<MeshRenderer>().material 
+            = status ? _highlight : _black;
     }
 
     public Vector3Int GetPosition()

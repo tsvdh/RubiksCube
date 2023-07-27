@@ -20,6 +20,7 @@ public class CubeRotator : MonoBehaviour
 
     private int _frames;
     private List<Rotation> _rotations;
+    private bool _highlighting;
 
     private CubeSolver _solver;
 
@@ -49,8 +50,8 @@ public class CubeRotator : MonoBehaviour
         }
     }
 
-    // FixedUpdate is called once per logic frame
-    public void FixedUpdate()
+    // Update is called once per frame
+    public void Update()
     {
         if (_frames++ < 10)
             return;
@@ -59,18 +60,27 @@ public class CubeRotator : MonoBehaviour
         {
             _solver.CheckState();
             
-            bool shouldRotate = Input.GetKey(KeyCode.P) 
+            bool shouldRotate = Input.GetKeyDown(KeyCode.P) 
                                 || (solvingMode == SolvingMode.Automatic && _solver.CurrentState <= desiredState);
-            if (!shouldRotate)
-                return;
+            if (shouldRotate)
+            {
+                Debug.Log($"Current State: {Enum.GetName(typeof(CubeSolver.State), _solver.CurrentState)}");
 
-            Debug.Log($"Current State: {Enum.GetName(typeof(CubeSolver.State), _solver.CurrentState)}");
+                List<Rotation> rotations = _solver.SolveStep();
 
-            List<Rotation> rotations = _solver.SolveStep();
-            
-            _rotations.AddRange(rotations);
+                _rotations.AddRange(rotations);
+            }
         }
+        
+        if (Input.GetKeyDown(KeyCode.O))
+            _solver.GetPartToSolve().SetHighlight(true);
+        if (Input.GetKeyUp(KeyCode.O))
+            _solver.GetPartToSolve().SetHighlight(false);
+    }
 
+    // FixedUpdate is called once per logic frame
+    public void FixedUpdate()
+    {
         if (_rotations.Count == 0)
                 return;
         
