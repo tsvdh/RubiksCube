@@ -64,10 +64,7 @@ public class CubeRotator : MonoBehaviour
                                 || (solvingMode == SolvingMode.Automatic && _solver.CurrentState <= desiredState);
             if (shouldRotate)
             {
-                Debug.Log($"Current State: {Enum.GetName(typeof(CubeSolver.State), _solver.CurrentState)}");
-
                 List<Rotation> rotations = _solver.SolveStep();
-
                 _rotations.AddRange(rotations);
             }
         }
@@ -136,7 +133,7 @@ public class CubeRotator : MonoBehaviour
             if (instant)
                 new CubeSlice(randomDirection, randomPosition).Rotate(randomDegrees);
             else
-                _rotations.Add(new Rotation(randomDirection, randomPosition, randomDegrees, Vector3Int.forward));
+                _rotations.Add(new Rotation(randomDirection, randomPosition, randomDegrees, Vector3Int.back));
         }
     }
 }

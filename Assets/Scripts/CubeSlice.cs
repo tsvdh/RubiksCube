@@ -81,6 +81,9 @@ public class CubeSlice
 
     public CubePart GetCenter()
     {
+        if (Position == 0)
+            throw new SystemException();
+        
         foreach (CubePart part in GetParts())
         {
             if (part.IsCenter())
@@ -88,6 +91,22 @@ public class CubeSlice
         }
 
         throw new SystemException();
+    }
+
+    public List<CubePart> GetCenters()
+    {
+        if (Position == 1)
+            throw new SystemException();
+
+        var centers = new List<CubePart>();
+        
+        foreach (CubePart part in GetParts())
+        {
+            if (part.IsCenter())
+                centers.Add(part);
+        }
+
+        return centers;
     }
 
     public List<CubePart> GetEdges()
@@ -105,6 +124,9 @@ public class CubeSlice
     
     public List<CubePart> GetCorners()
     {
+        if (Position == 0)
+            throw new SystemException();
+        
         var edges = new List<CubePart>();
 
         foreach (CubePart part in GetParts())
@@ -149,7 +171,7 @@ public class CubeSlice
 
             from.transform.RotateAround(Vector3.zero, direction, degrees);
 
-            bool positionEquals = from.GetPosition().Equals(to.GetPosition());
+            bool positionEquals = from.Equals(to);
 
             from.transform.RotateAround(Vector3.zero, direction, -degrees);
 
