@@ -489,4 +489,4 @@ MonoBehaviour:
   degreesPerStep: 2
   instantScramble: 1
   solvingMode: 2
-  desiredState: 2
+  desiredState: 3

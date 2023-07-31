@@ -46,4 +46,13 @@ namespace CubeUtils
         public int Degrees;
         public Vector3Int FacingDirection;
     }
+
+    public class Utils
+    {
+        public static Vector3Int GetLookDirection(Vector3Int facingDirection)
+        {
+            facingDirection.z *= -1;
+            return facingDirection;
+        }
+    }
 }

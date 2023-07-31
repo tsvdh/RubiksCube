@@ -42,7 +42,7 @@ public class CubeRotator : MonoBehaviour
                 
                 foreach (Rotation rotation in _solver.SolveStep())
                 {
-                    transform.LookAt(GetLookDirection(rotation));
+                    transform.LookAt(Utils.GetLookDirection(rotation.FacingDirection));
                     rotation.Slice.Rotate(rotation.Degrees);
                     transform.LookAt(Vector3.forward);
                 }
@@ -68,11 +68,15 @@ public class CubeRotator : MonoBehaviour
                 _rotations.AddRange(rotations);
             }
         }
-        
-        if (Input.GetKeyDown(KeyCode.O))
-            _solver.GetPartToSolve().SetHighlight(true);
-        if (Input.GetKeyUp(KeyCode.O))
-            _solver.GetPartToSolve().SetHighlight(false);
+
+        CubePart partToSolve = _solver.GetPartToSolve();
+        if (partToSolve)
+        {
+            if (Input.GetKeyDown(KeyCode.O))
+                partToSolve.SetHighlight(true);
+            if (Input.GetKeyUp(KeyCode.O))
+                partToSolve.SetHighlight(false);
+        }
     }
 
     // FixedUpdate is called once per logic frame
@@ -83,7 +87,7 @@ public class CubeRotator : MonoBehaviour
         
         Rotation curRotation = _rotations[0];
         
-        transform.LookAt(GetLookDirection(curRotation));
+        transform.LookAt(Utils.GetLookDirection(curRotation.FacingDirection));
 
         int step = curRotation.Degrees > 0
             ? Math.Min(curRotation.Degrees, degreesPerStep)
@@ -98,13 +102,6 @@ public class CubeRotator : MonoBehaviour
             _rotations.RemoveAt(0);
         else
             _rotations[0] = curRotation;
-    }
-
-    private static Vector3Int GetLookDirection(Rotation rotation)
-    {
-        Vector3Int lookDirection = Vector3Int.RoundToInt(rotation.FacingDirection);
-        lookDirection.z *= -1;
-        return lookDirection;
     }
 
     private void Scramble(bool instant)
