@@ -63,7 +63,7 @@ public class CubeSlice
         return parts;
     }
 
-    public void Rotate(int degrees)
+    public void Rotate(float degrees)
     {
         Vector3 rotationAxis = Direction switch
         {

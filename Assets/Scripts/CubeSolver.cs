@@ -440,8 +440,6 @@ public class CubeSolver
 
         return rotations;
     }
-    
-    
 
     public State CheckState()
     {

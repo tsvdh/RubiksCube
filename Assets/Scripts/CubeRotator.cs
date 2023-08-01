@@ -67,32 +67,31 @@ public class CubeRotator : MonoBehaviour
                 List<Rotation> rotations = _solver.SolveStep();
                 _rotations.AddRange(rotations);
             }
+            
+            CubePart partToSolve = _solver.GetPartToSolve();
+            if (partToSolve)
+            {
+                if (Input.GetKeyDown(KeyCode.O))
+                    partToSolve.SetHighlight(true);
+                if (Input.GetKeyUp(KeyCode.O))
+                    partToSolve.SetHighlight(false);
+            }
         }
-
-        CubePart partToSolve = _solver.GetPartToSolve();
-        if (partToSolve)
-        {
-            if (Input.GetKeyDown(KeyCode.O))
-                partToSolve.SetHighlight(true);
-            if (Input.GetKeyUp(KeyCode.O))
-                partToSolve.SetHighlight(false);
-        }
-    }
-
-    // FixedUpdate is called once per logic frame
-    public void FixedUpdate()
-    {
-        if (_rotations.Count == 0)
-                return;
+        
+        if (_rotations.Count == 0) 
+            return;
         
         Rotation curRotation = _rotations[0];
         
         transform.LookAt(Utils.GetLookDirection(curRotation.FacingDirection));
 
-        int step = curRotation.Degrees > 0
-            ? Math.Min(curRotation.Degrees, degreesPerStep)
-            : Math.Max(curRotation.Degrees, -degreesPerStep);
-
+        // 50 steps per second
+        float ratioOfStep = Time.deltaTime * 50;
+        
+        float step = curRotation.Degrees > 0 
+                       ? Math.Min(curRotation.Degrees, degreesPerStep * ratioOfStep) 
+                       : Math.Max(curRotation.Degrees, -degreesPerStep * ratioOfStep);
+        
         curRotation.Slice.Rotate(step);
         curRotation.Degrees -= step;
         
