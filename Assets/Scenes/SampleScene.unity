@@ -489,4 +489,5 @@ MonoBehaviour:
   degreesPerStep: 2
   instantScramble: 1
   solvingMode: 2
-  desiredState: 0
+  desiredState: 3
+  arrowPrefab: {fileID: 8403745297523107994, guid: f33c59e683e902e49865bf1bdd44007f, type: 3}

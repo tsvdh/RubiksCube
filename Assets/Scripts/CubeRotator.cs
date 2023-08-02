@@ -17,6 +17,7 @@ public class CubeRotator : MonoBehaviour
     public bool instantScramble;
     public SolvingMode solvingMode;
     public CubeSolver.State desiredState;
+    public GameObject arrowPrefab;
 
     private int _frames;
     private List<Rotation> _rotations;
@@ -29,6 +30,9 @@ public class CubeRotator : MonoBehaviour
     {
         _rotations = new List<Rotation>();
         _solver = new CubeSolver();
+        arrowPrefab = Instantiate(arrowPrefab);
+        arrowPrefab.transform.localScale = new Vector3(.15f, .15f, .15f);
+        arrowPrefab.transform.position = new Vector3(0, -10, 0);
         
         Scramble(instantScramble);
         _solver.CheckState();
@@ -73,8 +77,20 @@ public class CubeRotator : MonoBehaviour
             {
                 if (Input.GetKeyDown(KeyCode.O))
                     partToSolve.SetHighlight(true);
-                if (Input.GetKeyUp(KeyCode.O))
+                else if (Input.GetKeyUp(KeyCode.O))
                     partToSolve.SetHighlight(false);
+            }
+
+            Vector3Int? facingDirection = _solver.GetSolveFacingDirection();
+            if (facingDirection.HasValue)
+            {
+                if (Input.GetKeyDown(KeyCode.O))
+                {
+                    arrowPrefab.transform.position = facingDirection.Value * 5;
+                    arrowPrefab.transform.LookAt(Vector3.zero);
+                }
+                else if (Input.GetKeyUp(KeyCode.O))
+                    arrowPrefab.transform.position = new Vector3(0, -10, 0);
             }
         }
         
