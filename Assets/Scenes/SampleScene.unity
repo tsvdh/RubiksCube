@@ -486,8 +486,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 65948182f839b9a4aa3ad9aaaa3d7ceb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  degreesPerStep: 2
+  degreesPerStep: 8
   instantScramble: 1
-  solvingMode: 2
-  desiredState: 3
+  solvingMode: 1
+  desiredState: 5
   arrowPrefab: {fileID: 8403745297523107994, guid: f33c59e683e902e49865bf1bdd44007f, type: 3}
