@@ -21,8 +21,8 @@ public class CubeSolver
     }
 
     public State CurrentState;
-    private Transform _root;
-    private List<Vector3Int> _sides;
+    private static Transform _root;
+    private static List<Vector3Int> _sides;
     [CanBeNull] private CubePart _nextPart;
 
     public CubeSolver()
@@ -37,7 +37,32 @@ public class CubeSolver
             Vector3Int.right
         };
     }
-
+    
+    // --- START Routing Functions ---
+    
+    [CanBeNull]
+    public CubePart GetPartToSolve()
+    {
+        return CurrentState switch
+        {
+            State.WhiteCenter => GetWhiteCenterToSolve(),
+            State.WhiteCross => _nextPart ? _nextPart : GetWhiteEdgeToSolve(),
+            State.WhiteCorners => _nextPart ? _nextPart : GetWhiteCornerToSolve(),
+            State.MiddleEdges => _nextPart ? _nextPart : GetMiddleEdgeToSolve(),
+            _ => null
+        };
+    }
+    
+    public Vector3Int? GetSolveFacingDirection()
+    {
+        return CurrentState switch
+        {
+            State.YellowCross => GetYellowCrossDirection().Item1,
+            State.YellowCorners => GetYellowCornersDirection(),
+            _ => null
+        };
+    }
+    
     public List<Rotation> SolveStep()
     {
         switch (CurrentState)
@@ -60,15 +85,24 @@ public class CubeSolver
             case State.YellowCorners:
                 return SolveYellowCorners();
             
+            case State.TopCorners:
+                return SolveTopCorners();
+            
             default:
                 throw new ArgumentOutOfRangeException();
         }
     }
+    
+    // --- END Routing Functions ---
+    
+    // --- START Solving ---
 
     private List<Rotation> SolveWhiteCenter()
     {
         var rotations = new List<Rotation>();
         CubePart partToMove = GetWhiteCenterToSolve();
+        if (!partToMove)
+            throw new SystemException();
                 
         Vector3Int direction = new List<Vector3Int>(partToMove.GetSideColors().Keys)[0];
 
@@ -94,7 +128,11 @@ public class CubeSolver
             _nextPart = null;
         }
         else
+        {
             partToMove = GetWhiteEdgeToSolve();
+            if (!partToMove)
+                throw new SystemException();
+        }
 
         (Vector3Int whiteDirection, Vector3Int otherDirection) = GetEdgeDirections(partToMove);
 
@@ -166,7 +204,11 @@ public class CubeSolver
             _nextPart = null;
         }
         else
+        {
             partToMove = GetWhiteCornerToSolve();
+            if (!partToMove)
+                throw new SystemException();
+        }
 
         (Vector3Int whiteDirection, _, List<Vector3Int> sides) = GetCornerDirections(partToMove);
 
@@ -260,7 +302,11 @@ public class CubeSolver
             _nextPart = null;
         }
         else
+        {
             partToMove = GetMiddleEdgeToSolve();
+            if (!partToMove)
+                throw new SystemException();
+        }
 
         Dictionary<Vector3Int, Color> colorDict = partToMove.GetSideColors();
         var upSlice = new CubeSlice(Vector3Int.up);
@@ -401,6 +447,54 @@ public class CubeSolver
         return rotations;
     }
 
+    private List<Rotation> SolveTopCorners()
+    {
+        var rotations = new List<Rotation>();
+
+        var upSlice = new CubeSlice(Vector3Int.up);
+        int? degreesForCorrectUp = null;
+
+        // Try every up slice rotation
+        foreach (Vector3Int sideDirection in _sides)
+        {
+            int degrees = upSlice.GetRotationDegrees(Vector3Int.back, sideDirection);
+            
+            upSlice.Rotate(degrees);
+
+            var correctCorners = 0;
+            foreach (CubePart corner in upSlice.GetCorners())
+            {
+                if (corner.Equals(GetCorrectCornerPositionInSlice(corner)))
+                    correctCorners++;
+            }
+            
+            upSlice.Rotate(-degrees);
+
+            if (correctCorners == 2)
+            {
+                degreesForCorrectUp = degrees;
+                break;
+            }
+        }
+
+        if (!degreesForCorrectUp.HasValue)
+            throw new SystemException();
+
+        if (degreesForCorrectUp.Value != 0)
+        {
+            rotations.Add(new Rotation(Direction.Y, 1, degreesForCorrectUp.Value, Vector3Int.back));
+            return rotations;
+        }
+        
+        
+        
+        return rotations;
+    }
+    
+    // --- END Solving ---
+    
+    // --- START State Check ---
+
     public State CheckState()
     {
         var upSlice = new CubeSlice(Vector3Int.up);
@@ -495,6 +589,10 @@ public class CubeSolver
                 throw new SystemException();
         }
     }
+    
+    // --- END State Check ---
+    
+    // --- START Utilities ---
 
     private static (Vector3Int, Vector3Int) GetEdgeDirections(CubePart part)
     {
@@ -664,6 +762,10 @@ public class CubeSolver
 
         return true;
     }
+    
+    // --- END Utilities ---
+    
+    // --- START Indicators ---
 
     [CanBeNull]
     private static CubePart GetWhiteCenterToSolve()
@@ -827,7 +929,7 @@ public class CubeSolver
         return candidates[0];
     }
 
-    private (Vector3Int, bool) GetYellowCrossDirection()
+    private static (Vector3Int, bool) GetYellowCrossDirection()
     {
         // check amount of yellow edges
         var upSlice = new CubeSlice(Vector3Int.up);
@@ -901,7 +1003,7 @@ public class CubeSolver
         return (correctFacingSide, angled);
     }
     
-    private Vector3Int GetYellowCornersDirection()
+    private static Vector3Int GetYellowCornersDirection()
     {
         // Check amount of yellow corners
         var upSlice = new CubeSlice(Vector3Int.up);
@@ -965,26 +1067,5 @@ public class CubeSolver
         return correctSide;
     }
     
-    [CanBeNull]
-    public CubePart GetPartToSolve()
-    {
-        return CurrentState switch
-        {
-            State.WhiteCenter => GetWhiteCenterToSolve(),
-            State.WhiteCross => _nextPart ? _nextPart : GetWhiteEdgeToSolve(),
-            State.WhiteCorners => _nextPart ? _nextPart : GetWhiteCornerToSolve(),
-            State.MiddleEdges => _nextPart ? _nextPart : GetMiddleEdgeToSolve(),
-            _ => null
-        };
-    }
-    
-    public Vector3Int? GetSolveFacingDirection()
-    {
-        return CurrentState switch
-        {
-            State.YellowCross => GetYellowCrossDirection().Item1,
-            State.YellowCorners => GetYellowCornersDirection(),
-            _ => null
-        };
-    }
+    // --- END Indicators ---
 }
