@@ -59,6 +59,7 @@ public class CubeSolver
         {
             State.YellowCross => GetYellowCrossDirection().Item1,
             State.YellowCorners => GetYellowCornersDirection(),
+            State.TopCorners => GetTopCornersDirection(),
             _ => null
         };
     }
@@ -431,7 +432,7 @@ public class CubeSolver
 
         Vector3Int correctFacingSide = GetYellowCornersDirection();
         
-        // RUR` U RUUR`
+        // RUR` U RU2R`
         
         rotations.Add(new Rotation(Direction.X, 1, 90, correctFacingSide));
         rotations.Add(new Rotation(Direction.Y, 1, 90, correctFacingSide));
@@ -440,8 +441,7 @@ public class CubeSolver
         rotations.Add(new Rotation(Direction.Y, 1, 90, correctFacingSide));
         
         rotations.Add(new Rotation(Direction.X, 1, 90, correctFacingSide));
-        rotations.Add(new Rotation(Direction.Y, 1, 90, correctFacingSide));
-        rotations.Add(new Rotation(Direction.Y, 1, 90, correctFacingSide));
+        rotations.Add(new Rotation(Direction.Y, 1, 180, correctFacingSide));
         rotations.Add(new Rotation(Direction.X, 1, -90, correctFacingSide));
         
         return rotations;
@@ -469,11 +469,13 @@ public class CubeSolver
             }
             
             upSlice.Rotate(-degrees);
-
-            if (correctCorners == 2)
+            
+            if (correctCorners == 2 || correctCorners == 4)
             {
-                degreesForCorrectUp = degrees;
-                break;
+                // 2 correct if corners not solved, 4 if corners fully solved
+                // both cannot happen in same state
+                if (!degreesForCorrectUp.HasValue || Math.Abs(degrees) < Math.Abs(degreesForCorrectUp.Value))
+                    degreesForCorrectUp = degrees;
             }
         }
 
@@ -485,8 +487,22 @@ public class CubeSolver
             rotations.Add(new Rotation(Direction.Y, 1, degreesForCorrectUp.Value, Vector3Int.back));
             return rotations;
         }
+
+        Vector3Int correctFacingSide = GetTopCornersDirection().GetValueOrDefault();
+
+        if (correctFacingSide == default)
+            throw new SystemException();
         
-        
+        // R` F R` B2 R F` R` B2 R2
+        rotations.Add(new Rotation(Direction.X, 1, -90, correctFacingSide));
+        rotations.Add(new Rotation(Direction.Z, -1, -90, correctFacingSide));
+        rotations.Add(new Rotation(Direction.X, 1, -90, correctFacingSide));
+        rotations.Add(new Rotation(Direction.Z, 1, 180, correctFacingSide));
+        rotations.Add(new Rotation(Direction.X, 1, 90, correctFacingSide));
+        rotations.Add(new Rotation(Direction.Z, -1, 90, correctFacingSide));
+        rotations.Add(new Rotation(Direction.X, 1, -90, correctFacingSide));
+        rotations.Add(new Rotation(Direction.Z, 1, 180, correctFacingSide));
+        rotations.Add(new Rotation(Direction.X, 1, 180, correctFacingSide));
         
         return rotations;
     }
@@ -600,24 +616,24 @@ public class CubeSolver
             throw new SystemException();
         
         Dictionary<Vector3Int, Color> colorDict = part.GetSideColors();
-        if (!colorDict.ContainsValue(Color.White))
+        if (!colorDict.ContainsValue(Color.White) && !colorDict.ContainsValue(Color.Yellow))
             throw new SystemException();
 
-        Vector3Int whiteDirection = default;
+        Vector3Int significantDirection = default;
         Vector3Int otherDirection = default;
 
         foreach ((Vector3Int dir, Color color) in colorDict)
         {
-            if (color == Color.White)
-                whiteDirection = dir;
+            if (color == Color.White || color == Color.Yellow)
+                significantDirection = dir;
             else
                 otherDirection = dir;
         }
 
-        if (whiteDirection == default || otherDirection == default)
+        if (significantDirection == default || otherDirection == default)
             throw new SystemException();
 
-        return (whiteDirection, otherDirection);
+        return (significantDirection, otherDirection);
     }
 
     private static (Vector3Int, List<Vector3Int>, List<Vector3Int>) GetCornerDirections(CubePart part)
@@ -1063,6 +1079,54 @@ public class CubeSolver
 
         if (correctSide == default)
             throw new SystemException();
+
+        return correctSide;
+    }
+
+    private static Vector3Int? GetTopCornersDirection()
+    {
+        Vector3Int correctSide = default;
+        
+        foreach (Vector3Int facingSide in _sides)
+        {
+            _root.LookAt(Utils.GetLookDirection(facingSide));
+
+            CubePart topRight = default;
+            CubePart topLeft = default;
+            CubePart bottomLeft = default;
+
+            foreach (CubePart corner in new CubeSlice(Vector3Int.up).GetCorners())
+            {
+                Vector3Int cornerPos = corner.GetPosition();
+
+                if (cornerPos.x == 1 && cornerPos.z == 1)
+                    topRight = corner;
+
+                if (cornerPos.x == -1 && cornerPos.z == 1)
+                    topLeft = corner;
+
+                if (cornerPos.x == -1 && cornerPos.z == -1)
+                    bottomLeft = corner;
+            }
+
+            if (topRight == default || topLeft == default || bottomLeft == default)
+                throw new SystemException();
+            
+            if (!topRight.Equals(GetCorrectCornerPositionInSlice(topRight)))
+                continue;
+
+            if (topLeft.Equals(GetCorrectCornerPositionInSlice(topLeft))
+                || bottomLeft.Equals(GetCorrectCornerPositionInSlice(bottomLeft)))
+            {
+                correctSide = facingSide;
+                break;
+            }
+        }
+        
+        _root.LookAt(Vector3.forward);
+
+        if (correctSide == default)
+            return null;
 
         return correctSide;
     }
