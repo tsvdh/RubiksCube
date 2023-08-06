@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using CubeUtils;
 using UnityEngine;
+using UnityEngine.Serialization;
 using Random = UnityEngine.Random;
 
 public class CubeRotator : MonoBehaviour
@@ -12,14 +13,22 @@ public class CubeRotator : MonoBehaviour
         Automatic,
         Instant
     }
-    
-    public int degreesPerStep;
+
+    public enum Phase
+    {
+        Scrambling,
+        Solving
+    }
+
+    public int scrambleStep;
     public bool instantScramble;
+    public int solveStep;
     public SolvingMode solvingMode;
     public CubeSolver.State desiredState;
     public GameObject arrowPrefab;
-
+    
     private int _frames;
+    private Phase _phase;
     private List<Rotation> _rotations;
     private bool _highlighting;
     private GameObject _arrow;
@@ -29,6 +38,7 @@ public class CubeRotator : MonoBehaviour
     // Start is called before the first frame update
     public void Start()
     {
+        _phase = Phase.Scrambling;
         _rotations = new List<Rotation>();
         _solver = new CubeSolver();
         _arrow = Instantiate(arrowPrefab);
@@ -63,6 +73,8 @@ public class CubeRotator : MonoBehaviour
 
         if (_rotations.Count == 0)
         {
+            _phase = Phase.Solving;
+            
             _solver.CheckState();
             
             bool shouldRotate = Input.GetKeyDown(KeyCode.P) 
@@ -103,6 +115,8 @@ public class CubeRotator : MonoBehaviour
         
         transform.LookAt(Utils.GetLookDirection(curRotation.FacingDirection));
 
+        int degreesPerStep = _phase == Phase.Scrambling ? scrambleStep : solveStep;
+        
         // 50 steps per second
         float ratioOfStep = Time.deltaTime * 50;
         

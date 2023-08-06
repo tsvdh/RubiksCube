@@ -60,6 +60,7 @@ public class CubeSolver
             State.YellowCross => GetYellowCrossDirection().Item1,
             State.YellowCorners => GetYellowCornersDirection(),
             State.TopCorners => GetTopCornersDirection(),
+            State.TopEdges => GetTopEdgesDirection(),
             _ => null
         };
     }
@@ -88,6 +89,12 @@ public class CubeSolver
             
             case State.TopCorners:
                 return SolveTopCorners();
+            
+            case State.TopEdges:
+                return SolveTopEdges();
+            
+            case State.Solved:
+                return new List<Rotation>();
             
             default:
                 throw new ArgumentOutOfRangeException();
@@ -328,8 +335,6 @@ public class CubeSolver
             rotations.Add(new Rotation(rotationSlice, -sideDegrees, Vector3Int.back));
             rotations.Add(new Rotation(upSlice, -upperDegrees, Vector3Int.back));
 
-            CurrentState = State.WhiteCorners;
-
             return rotations;
         }
         
@@ -506,6 +511,67 @@ public class CubeSolver
         
         return rotations;
     }
+
+    private List<Rotation> SolveTopEdges()
+    {
+        var rotations = new List<Rotation>();
+        Vector3Int correctFacingSide = GetTopEdgesDirection();
+        
+        var amountMatchingUpperEdges = 0;
+
+        var upSlice = new CubeSlice(Vector3Int.up);
+        foreach (CubePart edge in upSlice.GetEdges())
+        {
+            if (edge.Equals(GetCorrectEdgePositionInSlice(edge)))
+                amountMatchingUpperEdges++;
+        }
+        
+        int upperDegrees;
+
+        if (amountMatchingUpperEdges == 0)
+            upperDegrees = 90;
+        else
+        {
+            CubePart facingUpperEdge = default;
+            CubePart matchingUpperEdge = default;
+
+            foreach (CubePart edge in new CubeSlice(correctFacingSide).GetEdges())
+            {
+                if (edge.GetPosition().y == 1)
+                    facingUpperEdge = edge;
+            }
+
+            if (facingUpperEdge == default)
+                throw new SystemException();
+
+            foreach (CubePart edge in upSlice.GetEdges())
+            {
+                if (facingUpperEdge.Equals(GetCorrectEdgePositionInSlice(edge)))
+                {
+                    // edge should be in facing edge position
+                    matchingUpperEdge = edge;
+                    break;
+                }
+            }
+
+            if (matchingUpperEdge == default)
+                throw new SystemException();
+
+            upperDegrees = upSlice.GetRotationDegrees(matchingUpperEdge, facingUpperEdge);
+        }
+        
+        // F2 U? M U2 M` U?` F2
+        
+        rotations.Add(new Rotation(Direction.Z, -1, 180, correctFacingSide));
+        rotations.Add(new Rotation(Direction.Y, 1, upperDegrees, correctFacingSide));
+        rotations.Add(new Rotation(Direction.X, 0, 90, correctFacingSide));
+        rotations.Add(new Rotation(Direction.Y, 1, 180, correctFacingSide));
+        rotations.Add(new Rotation(Direction.X, 0, -90, correctFacingSide));
+        rotations.Add(new Rotation(Direction.Y, 1, upperDegrees, correctFacingSide));
+        rotations.Add(new Rotation(Direction.Z, -1, 180, correctFacingSide));
+
+        return rotations;
+    }
     
     // --- END Solving ---
     
@@ -514,96 +580,73 @@ public class CubeSolver
     public State CheckState()
     {
         var upSlice = new CubeSlice(Vector3Int.up);
+
+        CurrentState = State.WhiteCenter;
         
-        switch (CurrentState)
+        Color color = new CubeSlice(Vector3Int.down).GetCenter().GetSideColors()[Vector3Int.down];
+        // Bottom center must be white
+        if (color != Color.White)
+            return CurrentState;
+        
+        CurrentState = State.WhiteCross;
+        
+        foreach (CubePart part in new CubeSlice(Vector3Int.down).GetEdges())
         {
-            case State.WhiteCenter:
-                Color color = new CubeSlice(Vector3Int.down).GetCenter().GetSideColors()[Vector3Int.down];
-                // Bottom center must be white
-                if (color == Color.White)
-                {
-                    CurrentState = State.WhiteCross;
-                    return CheckState();
-                }
-
+            if (!IsWhiteEdgeCorrect(part))
                 return CurrentState;
-
-            case State.WhiteCross:
-                foreach (CubePart part in new CubeSlice(Vector3Int.down).GetEdges())
-                {
-                    if (!IsWhiteEdgeCorrect(part))
-                        return CurrentState;
-                }
-
-                CurrentState = State.WhiteCorners;
-                return CheckState();
-
-            case State.WhiteCorners:
-                foreach (CubePart part in new CubeSlice(Vector3Int.down).GetCorners())
-                {
-                    if (!IsWhiteCornerCorrect(part))
-                        return CurrentState;
-                }
-
-                CurrentState = State.MiddleEdges;
-                return CheckState();
-
-            case State.MiddleEdges:
-                foreach (CubePart part in new CubeSlice(Direction.Y, 0).GetEdges())
-                {
-                    if (!IsMiddleEdgeCorrect(part))
-                        return CurrentState;
-                }
-
-                CurrentState = State.YellowCross;
-                return CheckState();
-            
-            case State.YellowCross:
-                foreach (CubePart edge in upSlice.GetEdges())
-                {
-                    if (edge.GetSideColors()[Vector3Int.up] != Color.Yellow)
-                        return CurrentState;
-                }
-
-                CurrentState = State.YellowCorners;
-                return CheckState();
-            
-            case State.YellowCorners:
-                foreach (CubePart corner in upSlice.GetCorners())
-                {
-                    if (corner.GetSideColors()[Vector3Int.up] != Color.Yellow)
-                        return CurrentState;
-                }
-                
-                CurrentState = State.TopCorners;
-                return CheckState();
-            
-            case State.TopCorners:
-                foreach (CubePart corner in upSlice.GetCorners())
-                {
-                    if (!corner.Equals(GetCorrectCornerPositionInSlice(corner)))
-                        return CurrentState;
-                }
-
-                CurrentState = State.TopEdges;
-                return CheckState();
-
-            case State.TopEdges:
-                foreach (CubePart edge in upSlice.GetEdges())
-                {
-                    if (!edge.Equals(GetCorrectEdgePositionInSlice(edge)))
-                        return CurrentState;
-                }
-
-                CurrentState = State.Solved;
-                return CurrentState;
-            
-            case State.Solved:
-                return CurrentState;
-            
-            default:
-                throw new SystemException();
         }
+
+        CurrentState = State.WhiteCorners;
+        
+        foreach (CubePart part in new CubeSlice(Vector3Int.down).GetCorners())
+        {
+            if (!IsWhiteCornerCorrect(part))
+                return CurrentState;
+        }
+
+        CurrentState = State.MiddleEdges;
+        
+        foreach (CubePart part in new CubeSlice(Direction.Y, 0).GetEdges())
+        {
+            if (!IsMiddleEdgeCorrect(part))
+                return CurrentState;
+        }
+
+        CurrentState = State.YellowCross;
+        
+        foreach (CubePart edge in upSlice.GetEdges())
+        {
+            if (edge.GetSideColors()[Vector3Int.up] != Color.Yellow)
+                return CurrentState;
+        }
+
+        CurrentState = State.YellowCorners;
+        
+        foreach (CubePart corner in upSlice.GetCorners())
+        {
+            if (corner.GetSideColors()[Vector3Int.up] != Color.Yellow)
+                return CurrentState;
+        }
+                
+        CurrentState = State.TopCorners;
+        
+        foreach (CubePart corner in upSlice.GetCorners())
+        {
+            if (!corner.Equals(GetCorrectCornerPositionInSlice(corner)))
+                return CurrentState;
+        }
+
+        CurrentState = State.TopEdges;
+        
+        foreach (CubePart edge in upSlice.GetEdges())
+        {
+            if (!edge.Equals(GetCorrectEdgePositionInSlice(edge)))
+                return CurrentState;
+        }
+
+        CurrentState = State.Solved;
+
+        return CurrentState;
     }
     
     // --- END State Check ---
@@ -1129,6 +1172,34 @@ public class CubeSolver
             return null;
 
         return correctSide;
+    }
+    
+    private static Vector3Int GetTopEdgesDirection()
+    {
+        Vector3Int correctSide = default;
+
+        foreach (Vector3Int facingSide in _sides)
+        {
+            var sideSlice = new CubeSlice(facingSide);
+            CubePart upperEdge = default;
+            foreach (CubePart edge in sideSlice.GetEdges())
+            {
+                if (edge.GetPosition().y == 1)
+                    upperEdge = edge;
+            }
+
+            if (upperEdge == default)
+                throw new SystemException();
+            
+            if (upperEdge.Equals(GetCorrectEdgePositionInSlice(upperEdge)))
+            {
+                correctSide = -facingSide;
+                break;
+            }
+        }
+
+        // If no matching side, return default side
+        return correctSide != default ? correctSide : Vector3Int.back;
     }
     
     // --- END Indicators ---
